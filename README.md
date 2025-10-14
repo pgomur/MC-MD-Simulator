@@ -1,9 +1,4 @@
 <p align="center">
-  <img src="web/assets/cube.png" alt="Cube Icon" width="50" style="vertical-align: middle;" />
-  <span style="font-size: 2em; font-weight: bold; vertical-align: middle;">MC-MD-Simulator</span>
-</p>
-
-<p align="center">
 Functional prototype of an advanced web platform for Molecular Dynamics (MD) and Monte Carlo (MC) simulations, designed for research in computational physics, theoretical chemistry, and materials science. It combines the performance of Python and Fortran with interactive visualizations in Plotly, allowing detailed analysis of energy, temperature, pressure, particle distributions, and metadynamics biases. The interface provides precise tools for studying complex molecular systems, facilitating both exploration and interpretation of results.
 </p>
 
