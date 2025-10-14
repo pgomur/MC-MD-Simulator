@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "MD Simulation"
+version = "0.1.0"
+authors = ["Pedro Gomez Urdiales"]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+numpy = "2.3.3"
+flask = "3.1.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

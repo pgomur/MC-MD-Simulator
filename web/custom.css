@@ -1,0 +1,48 @@
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;              /* ancho fino pero visible / thin but visible width */
+  height: 8px;             /* scroll horizontal también / horizontal scroll too */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* sin fondo / no background */
+  margin: 4px;             /* espacio arriba y abajo / space top & bottom */
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(120,120,120,0.5), rgba(80,80,80,0.5));
+                             /* gradiente sutil / subtle gradient */
+  border-radius: 9999px;   /* redondeado total / fully rounded */
+  transition: background 0.3s ease, opacity 0.3s ease; /* transición suave / smooth transition */
+  opacity: 0.4;            /* sutil / subtle */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(100,100,100,0.8), rgba(70,70,70,0.8));
+                             /* gradiente más oscuro / darker gradient on hover */
+  opacity: 0.8;            /* más visible al pasar el mouse / more visible on hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin; /* fino / thin */
+  scrollbar-color: rgba(120,120,120,0.5) transparent; /* color del thumb y track / thumb & track color */
+}
+
+
+/* Dark Mode Adaptation */
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(200,200,200,0.4), rgba(160,160,160,0.4));
+                             /* gradiente más claro para dark mode / lighter gradient for dark mode */
+  opacity: 0.3;            /* sutil / subtle */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(220,220,220,0.7), rgba(180,180,180,0.7));
+                             /* gradiente más visible al pasar el mouse / more visible gradient on hover */
+  opacity: 0.7;            /* más visible / more visible */
+}
+
+.dark * {
+  scrollbar-color: rgba(200,200,200,0.4) transparent; /* Firefox dark mode / Firefox dark mode */
+}

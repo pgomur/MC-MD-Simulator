@@ -1,0 +1,543 @@
+<head>
+  <link rel="stylesheet" href="custom.css" />
+</head>
+
+<div id="infoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 transition-opacity duration-300 p-2">
+  <div class="bg-lightBg dark:bg-gray-800 rounded-3xl shadow-lg w-full h-full sm:w-11/12 sm:h-5/6 md:w-10/12 md:h-5/6 lg:w-9/12 lg:h-5/6 xl:w-8/12 xl:h-5/6 max-w-[95vw] max-h-[95vh] p-6 relative overflow-y-auto flex flex-col">
+    <button id="closeModal" class="absolute top-4 right-4 text-gray-800 dark:text-gray-200 hover:text-gray-500 transition-colors duration-300 text-lg">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <div class="flex border-b border-gray-300 dark:border-gray-600 mb-4">
+      <button id="tab1Button" class="px-4 py-2 -mb-px border-b-2 border-blue-600 dark:border-blue-400 font-semibold text-blue-600 dark:text-blue-400 focus:outline-none">NVT Langevin BAOAB</button>
+      <button id="tab2Button" class="px-4 py-2 -mb-px border-b-2 border-transparent font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 focus:outline-none">μVT Monte Carlo</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto space-y-4">
+      <div id="tab1Content" class="tab-content">
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">1. Introduction</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>Molecular dynamics (MD) is a numerical technique that allows the simulation of the temporal evolution of a set of interacting particles according to the laws of classical mechanics. Each particle follows Newton's second law:</p>
+          <p class="text-center">$$ m_i \frac{d^2 \mathbf{r}_i}{dt^2} = \mathbf{F}_i $$</p>
+          <p>where \(\mathbf{F}_i\) is the resultant force on particle \(i\).</p>
+          <p>This program is designed to be efficient, scalable, and reproducible in simulations of industrial or research systems. Its main features are:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>Implementation of a Lennard-Jones (12-6) potential:</strong> widely used in simulations of liquids, molecular solids, and binary mixtures.</li>
+            <li><strong>Use of a stochastic BAOAB integrator:</strong> It implements Langevin dynamics, ensuring numerical stability and correct canonical sampling.</li>
+            <li><strong>Optimization using cell lists:</strong> reduces the complexity of interaction calculations from <code>O(N²)</code> to <code>O(N)</code>, significantly speeding up computation for large systems.</li>
+            <li><strong>Parallelization with OpenMP:</strong> allows leveraging modern multi-core processors by executing force calculations and time integration in parallel.</li>
+            <li><strong>Compact binary output:</strong> stores positions, velocities, forces, and energies without loss of precision, facilitating subsequent analysis and visualization.</li>
+          </ul>
+          <p>The modular design of the code makes it a solid starting point for research on molecular materials, complex liquids, and multicomponent simulations, ensuring reproducibility, stability, and computational efficiency.</p>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">2. System Parameters</span>
+          <i class="fas fa-chevron-down transition-transform duration-300"></i>
+        </button>
+        <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>The program receives its main parameters from the command line or uses default values. These define the physical and numerical state of the simulation.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>Number of particles (N):</strong> determines the size of the system.</li>
+            <li><strong>Number of steps (steps):</strong> temporal duration of the simulation.</li>
+            <li><strong>Integration time step (\(\Delta t\)):</strong> controls the temporal resolution. Smaller values increase accuracy but also raise computational cost.</li>
+            <li><strong>Cubic box (L):</strong> defines the simulation volume with periodic boundary conditions.</li>
+            <li><strong>Cutoff radius (\(r_c\)):</strong> maximum distance at which interactions are considered.</li>
+            <li><strong>Skin:</strong> additional margin used in cell lists to avoid frequent rebuilds.</li>
+            <li><strong>Temperature (\(k_B T\)):</strong> sets the average thermal energy.</li>
+            <li><strong>Friction coefficient (\(\gamma\)):</strong> regulates the coupling to the Langevin thermostat.</li>
+            <li><strong>Random seed (seed):</strong> ensures reproducibility.</li>
+          </ul>
+
+          <h4 class="font-semibold mt-2">Shifted Lennard-Jones potential</h4>
+          <p>The Lennard-Jones (12-6) potential models Van der Waals attractions and volume-exclusion repulsions:</p>
+          <p>$$U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r} \right)^6 \right]$$</p>
+          <p>where:</p>
+          <ul class="list-disc pl-6">
+            <li>\(\sigma\) controls the distance at which the potential energy goes to zero.</li>
+            <li>\(\epsilon\) defines the depth of the energy well.</li>
+          </ul>
+          <p>In the code, a shift is applied at the cutoff:</p>
+          <p>$$U_\text{shift}(r) = U(r) - U(r_c), \quad r \le r_c$$</p>
+          <p>This way, the energy is continuous at (r_c), avoiding jumps that could affect integration stability.</p>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">3. Langevin BAOAB Integrator</span>
+          <i class="fas fa-chevron-down transition-transform duration-300"></i>
+        </button>
+        <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>Langevin integration introduces noise and dissipation to simulate a system at constant temperature (NVT ensemble). The Langevin equation is:</p>
+          <p>$$ m \frac{d\mathbf{v}}{dt} = \mathbf{F} - \gamma m \mathbf{v} + \sqrt{2 \gamma m k_B T} \, \mathbf{R}(t) $$</p>
+          <p>where \(\mathbf{R}(t)\) is a white Gaussian noise.</p>
+
+          <h4 class="font-semibold mt-2">BAOAB scheme</h4>
+          <p>The BAOAB integrator splits the propagator into five steps:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>B (kick, half step):</strong> $$\mathbf{v} \leftarrow \mathbf{v} + \frac{\Delta t}{2 m} \mathbf{F}$$</li>
+            <li><strong>A (drift):</strong> $$\mathbf{r} \leftarrow \mathbf{r} + \Delta t \mathbf{v}$$</li>
+            <li><strong>O (Ornstein-Uhlenbeck):</strong> $$\mathbf{v} \leftarrow e^{-\gamma \Delta t} \mathbf{v} + \sqrt{\frac{k_B T}{m} (1 - e^{-2 \gamma \Delta t})} \, \mathbf{R}$$</li>
+            <li><strong>A (drift already applied)</strong></li>
+            <li><strong>B (final kick):</strong> $$\mathbf{v} \leftarrow \mathbf{v} + \frac{\Delta t}{2 m} \mathbf{F}$$</li>
+          </ul>
+
+          <h4 class="font-semibold mt-2">Advantages of BAOAB</h4>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Accurately reproduces the Maxwell-Boltzmann velocity distribution.</li>
+            <li>Maintains temperature better than simple Langevin algorithms.</li>
+            <li>Stable even with relatively large integration time steps.</li>
+            <li>Correct in the limit \(\gamma \to 0\) (pure Newtonian dynamics).</li>
+          </ul>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">4. Optimization with Cell Listss</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>The calculation of forces between all particles scales as <code>O(N²)</code>. For thousands of particles, this becomes prohibitive.</p>
+
+          <p>The cell list divides the box into subcells of side <code>r_c + skin</code>. Each cell stores the particles it contains, and a particle only interacts with particles in its cell and the 26 neighboring cells.</p>
+
+          <h3 class="font-semibold">Construction of the cell list</h3>
+          <p>Each particle is assigned to a cell:</p>
+          <p>$$c = i_x + N_x i_y + N_x N_y i_z$$</p>
+          <p>A linked index is stored in <code>linked_list</code>. Only the neighboring cells are traversed in the force calculation.</p>
+
+          <h3 class="font-semibold">Complejidad</h3>
+          <p>The average number of particles per cell is constant (independent of <code>N</code>), so the force evaluation scales as <code>O(N)</code> instead of <code>O(N²)</code>. This allows the simulation of tens or hundreds of thousands of particles.</p>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">5. Internal Hardcoded Values</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300">
+          <table class="w-full text-left border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden border-collapse">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+              <tr>
+                <th class="px-3 py-2 border-b border-gray-300 dark:border-gray-600">Value</th>
+                <th class="px-3 py-2 border-b border-gray-300 dark:border-gray-600">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">0.8</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Minimum distance between particles at initialization (min_dist)</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">0.1</td>
+                <td>Initial perturbation scale on the grid (scale)</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">6.283185307179586</td>
+                <td>2π for Box-Muller (twopi)</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">24.0</td>
+                <td>Lennard-Jones force factor</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">4.0</td>
+                <td>Lennard-Jones energy factor</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">0.5</td>
+                <td>Partial kick in BAOAB (velocity)</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">±0.1</td>
+                <td>Initial random perturbation margin of positions</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">2.0</td>
+                <td>Initial velocity factor: 2 kT/m</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">1.0</td>
+                <td>Base mass of particles</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">0.5</td>
+                <td>Mass increase for the second type of particles</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">1.0</td>
+                <td>Sigma base of particles type 1</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">1.2</td>
+                <td>Sigma base of particles type 2</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">1.0</td>
+                <td>Epsilon base of particles type 1</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">1.2</td>
+                <td>Epsilon base of particles type 2</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">0.2</td>
+                <td>Randomization factor over grid (additional perturbation)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">6. Parallelization with OpenMP</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>The program is parallelized with OpenMP, which distributes loops among multiple execution threads to fully utilize multi-core processors.</p>
+
+          <h3 class="font-semibold">Strategies applied</h3>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>Force calculation:</strong> each thread accumulates results in local arrays (<code>f_locals</code> and <code>pe_locals</code>). A global reduction is performed at the end, avoiding race conditions.</li>
+            <li><strong>BAOAB Integration:</strong> each thread integrates a subset of particles independently. A thread-safe random generator is implemented so that the Langevin noise is reproducible across all threads.</li>
+            <li><strong>Kinetic energy:</strong> use of the clause <code>reduction(+:ke)</code>, adding the results of all the threads efficiently and safely.</li>
+          </ul>
+
+          <h3 class="font-semibold">Benefits</h3>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Approximate linear acceleration up to tens of cores.</li>
+            <li>Efficient use of multi-core CPUs in high-performance workstations and clusters.</li>
+            <li>Scalability without altering simulation reproducibility or consistency.</li>
+          </ul>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">7. System Initialization</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>The program builds a physically realistic initial system in three phases:</p>
+
+          <h3 class="font-semibold">Starting positions</h3>
+          <ul class="list-disc pl-6">
+            <li>Particles are placed on a uniform cubic grid.</li>
+            <li>A controlled random disturbance is introduced.</li>
+            <li>It is verified that no particle is less than a minimum distance, avoiding non-physical collisions at the beginning.</li>
+          </ul>
+
+          <h3 class="font-semibold">Initial velocities</h3>
+          <p>They are assigned according to the Maxwell-Boltzmann distribution:</p>
+          <p>$$P(v) \propto \exp\left(-\frac{m v^2}{2 k_B T}\right)$$</p>
+          <p>This ensures that the system starts in thermal equilibrium.</p>
+
+          <h3 class="font-semibold">Types of particles</h3>
+          <p>The code supports two types with different parameters (<code>σ</code>, <code>ϵ</code>), which allows the study of binary mixtures (e.g. solutions or alloys).</p>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">8. Energy Calculation</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>During the simulation, three fundamental magnitudes are recorded:</p>
+
+          <h3 class="font-semibold">Kinetic energy</h3>
+          <p>$$K = \sum_{i=1}^{N} \frac{1}{2} m_i |v_i|^2$$</p>
+
+          <h3 class="font-semibold">Potential energy (with shift)</h3>
+          <p>$$U = \sum_{i \lt j} U_{shift}(r_{ij})$$</p>
+
+          <h3 class="font-semibold">Total energy</h3>
+          <p>$$E = K + U$$</p>
+
+          <p>These magnitudes allow us to verify:</p>
+          <ul class="list-disc pl-6">
+            <li>Statistical conservation of energy.</li>
+            <li>Stability of integration.</li>
+            <li>Thermodynamic equilibrium of the system.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="tab2Content" class="tab-content hidden">
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">1. Introduction</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>Monte Carlo (MC) simulations are a fundamental tool in statistical physics, computational chemistry, and materials science for exploring the configuration of many-particle systems. This approach is based on generating random configurations of the system and accepting or rejecting changes according to thermodynamic criteria, usually the Metropolis-Hastings algorithm.</p>
+          <p>In particular, the module we describe combines three advanced aspects:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Particle motions in a canonical or grand-canonical system.</li>
+            <li>Metadynamics, to efficiently explore complex energy landscapes.</li>
+            <li>Replica Exchange Monte Carlo (REMC), to improve sampling by exchanging replicas at different temperatures.</li>
+          </ul>
+          <p>The operation and mathematical basis of each component are detailed below.</p>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">2. Monte Carlo algorithm</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>The Monte Carlo algorithm explores the configuration space of a particle system by generating random motions and probabilistically accepting them. Each Monte Carlo step consists of selecting a motion type and applying a Metropolis-Hastings criterion based on the system's energy change.</p>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              Types of movements
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <ul class="list-disc pl-6 space-y-1">
+                <li><strong>Particle motion:</strong> a random displacement of a particle within a defined maximum range is proposed.</li>
+                <li><strong>Particle insertion:</strong> A new particle is added at a random position within the volume of the system (grand-canonical ensemble).</li>
+                <li><strong>Particle removal:</strong> A randomly selected existing particle is removed.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              Acceptance criteria
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>
+                For a proposed motion that changes the energy of the system <code>E<sub>old</sub></code> a <code>E<sub>new</sub></code
+                >, the probability of acceptance is defined as:
+              </p>
+              <p>$$P_{accept} = \min\left(1, \exp\left(-\frac{E_{new} - E_{old}}{k_B T}\right)\right)$$</p>
+              <p>
+                where <code>k<sub>B</sub></code> is the Boltzmann constant and <code>T</code> the temperature of the system. If a random number <code>r ∈ [0,1]</code> is less than <code>P<sub>accept</sub></code
+                >, the move is accepted; otherwise, it is rejected. This criterion ensures that the system evolves according to the Boltzmann distribution, reaching thermodynamic equilibrium.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">3. Particle Movement and Displacement Adjustment</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <!-- Movimiento de Partículas -->
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              Particle Movement
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>Particle movement is the main mechanism for exploring configuration space. Each move involves:</p>
+              <p>$$r_i^{trial} = r_i + \Delta r, \quad |\Delta r| \le \Delta_{max}$$</p>
+              <p>where <code>r_i</code> is the position of the particle, and <code>Δmax</code> is the maximum allowed displacement.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              Displacement Optimization
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>To maintain adequate efficiency, the parameter is dynamically adjusted <code>Δmax</code> according to the acceptance rate <code>r_{accept}</code>:</p>
+              <p>$$ \Delta_{max}^{nuevo} = \begin{cases} \Delta_{max} \cdot (1 + \alpha), & r_{accept} > r_{target,alto} \\ \Delta_{max} \cdot (1 - \alpha), & r_{accept} < r_{target,bajo} \\ \Delta_{max}, & r_{target,bajo} \le r_{accept} \le r_{target,alto} \end{cases} $$</p>
+              <p>This ensures a balance between exploration and acceptance, optimizing sampling efficiency.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">4. Particle Insertion and Deletion</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <!-- Inserción -->
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              Insertion
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>A particle is proposed to be added at a random position, and its interaction energy is calculated <code>E_{new}</code> with the existing particles. The acceptance probability is:</p>
+              <p>$$P_{insert} = \min\left(1, \frac{V}{N+1} \exp\left[-\frac{E_{new} - \mu}{k_B T}\right]\right)$$</p>
+              <p>where <code>V</code> is the system volume. This formula reflects the relationship between volume, number of particles, and energy, ensuring the correct statistical distribution.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              Deletion
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>A particle is selected, and its associated energy is calculated <code>E_{old}</code>. The acceptance probability is:</p>
+              <p>$$P_{delete} = \min\left(1, \frac{N}{V} \exp\left[\frac{E_{old} - \mu}{k_B T}\right]\right)$$</p>
+              <p>These rules ensure that insertions and deletions satisfy the grand-canonical ensemble equilibrium condition.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">5. Metadynamics and Replica Exchange Monte Carlo (REMC)</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <!-- 4.1 Metadynamics -->
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              5.1 Metadynamics
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>Metadynamics is a technique for exploring complex energy landscapes with multiple local minima. It involves adding a bias potential that discourages previously visited configurations, using "Gaussian hills" on collective variables <code>s(r)</code>:</p>
+              <p>$$\Delta V(s) = h \exp\left[-\frac{(s - s_{center})^2}{2\sigma^2}\right]$$</p>
+              <ul class="list-disc pl-6 space-y-1">
+                <li><code>h</code> is the height of the hill.</li>
+                <li><code>σ</code> its width.</li>
+                <li><code>s_{center}</code> is the current average value of the collective variable.</li>
+              </ul>
+              <p>By adding these hills at each step, the system is forced to explore new configurations, overcoming energy barriers.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              5.2 Replica Exchange Monte Carlo (REMC)
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>REMC involves simulating multiple replicas of the system at different temperatures. <code>T_i</code> and allowing configuration exchanges. The exchange probability between replicas <code>i</code> y <code>j</code> is:</p>
+              <p>$$P_{exchange} = \min\left(1, \exp\left[\left(\frac{1}{k_B T_i} - \frac{1}{k_B T_j}\right) (E_j - E_i)\right]\right)$$</p>
+              <p>This approach improves sampling in systems with multiple local minima, increasing the likelihood of reaching low-energy configurations in the cold replicas.</p>
+              <p>The combination of REMC with metadynamics allows efficient exploration of complex and hard-to-access energy landscapes.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">6. Acceptance Counters and Statistical Reporting</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>In Monte Carlo algorithms, not all proposed moves are accepted. Therefore, it is essential to track the proportion of accepted and rejected moves. This allows assessing the efficiency of the simulation and adjusting parameters to optimize sampling of the configuration space.</p>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              6.1 Concept of Acceptance Rates
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>For each type of move (e.g., moving a particle, inserting, or deleting a particle), the acceptance rate is defined as:</p>
+              <p>$$r_{accept} = \frac{N_{aceptados}}{N_{intentos}}$$</p>
+              <p>where <code>N_{intentos}</code> is the total number of proposed moves, and <code>N_{aceptados}</code> is the number of moves actually accepted according to the Metropolis-Hastings criterion.</p>
+              <p>It is calculated locally (over a window of recent steps) and globally (since the start of the simulation), which allows:</p>
+              <ul class="list-disc pl-6 space-y-1">
+                <li>Dynamic parameter control: adjusting moves that are too large or too small.</li>
+                <li>Sampling performance evaluation: reflects the effective exploration of configuration space.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              6.2 Dynamic Adjustment of Displacements
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>Acceptance rate information is used to modify the size of proposed moves:</p>
+              <p>$$ \Delta max_{nuevo} = \begin{cases} \Delta max \times (1 + \alpha), & \text{si } r_{accept} > r_{target,alto} \\ \Delta max \times (1 - \alpha), & \text{si } r_{accept} < r_{target,bajo} \\ \Delta max, & \text{si } r_{target,bajo} \le r_{accept} \le r_{target,alto} \end{cases} $$</p>
+              <p>where <code>α</code> is a small adjustment factor (e.g., 0.05), and <code>r_{target}</code> is the optimal acceptance rate (~50%). This ensures balanced efficiency and exploration.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              6.3 Statistical Reporting and Diagnostics
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <p>Maintaining separate counters for each type of move allows:</p>
+              <ul class="list-disc pl-6 space-y-1">
+                <li>Diagnostics: detecting inefficient or never-accepted moves.</li>
+                <li>Balance between moves: adjusting insertions/deletions as needed.</li>
+                <li>Comparative statistics: comparing rates between simulations or replicas (REMC).</li>
+              </ul>
+              <p>Mathematically, the rate is calculated as:</p>
+              <p>$$r_{\text{accept}}^{\text{tipo}} = \frac{\text{número de movimientos aceptados del tipo}}{\text{número de movimientos propuestos del tipo}}$$</p>
+              <p>This allows analyzing instantaneous efficiency (recent window) and cumulative efficiency (entire simulation).</p>
+            </div>
+          </div>
+
+          <div class="accordion-item mt-2">
+            <button class="accordion-btn w-full text-left px-4 py-2 font-medium bg-gray-100 dark:bg-gray-600 rounded-lg flex justify-between items-center">
+              6.4 Benefits for Advanced Simulations
+              <i class="fas fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div class="accordion-content hidden px-4 py-2 text-gray-700 dark:text-gray-300 space-y-2">
+              <ul class="list-disc pl-6 space-y-1">
+                <li>Optimizes sampling in complex systems with variable local energies.</li>
+                <li>Facilitates integration with Metadynamics and REMC, where acceptance rates depend on additional factors.</li>
+                <li>Ensures ergodicity: adequate exploration of all configurations accessible according to the ensemble.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <button class="accordion-btn w-full flex justify-between items-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg mt-4">
+          <span class="font-semibold">7. Summary of Key Concepts</span>
+          <i class="fas fa-chevron-down transition-transform"></i>
+        </button>
+        <div class="accordion-content hidden mt-2 pl-4 text-gray-700 dark:text-gray-300 space-y-2">
+          <p>Monte Carlo simulations combined with advanced techniques such as metadynamics and REMC integrate several fundamental concepts to ensure efficient and statistically correct sampling of configuration space. The most important concepts and their roles within the algorithm are summarized below:</p>
+
+          <table class="w-full text-left border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden border-collapse">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+              <tr>
+                <th class="px-3 py-2 border-b border-gray-300 dark:border-gray-600">Concept</th>
+                <th class="px-3 py-2 border-b border-gray-300 dark:border-gray-600">Detailed Function</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Particle movement</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Allows exploration of new configurations by displacing particles within the system. Each move is evaluated probabilistically, ensuring that thermodynamically favorable configurations are visited more frequently, respecting the Boltzmann distribution.</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Particle insertion and deletion</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Facilitates simulation in the grand-canonical ensemble, where the number of particles can vary. These operations adjust the system density and allow the study of phenomena such as adsorption, desorption, or particle fluctuations under a defined chemical potential.</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Metropolis-Hastings</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Provides the probabilistic acceptance/rejection criterion based on the energy change ΔE. It ensures that the simulation evolves ergodically and reaches thermodynamic equilibrium, respecting the Boltzmann probability.</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Metadynamics</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Introduces a cumulative bias potential on collective variables to overcome energy barriers and escape local minima. This allows exploration of regions of configuration space that would rarely be visited by standard Monte Carlo.</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Replica Exchange Monte Carlo (REMC)</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Improves sampling of systems with multiple local minima by allowing configuration exchanges between replicas at different temperatures. Hot replicas explore the space broadly, while cold replicas refine sampling of low-energy states.</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Displacement Adjustment</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Maintains algorithm efficiency by dynamically adjusting the size of proposed moves according to the acceptance rate. This ensures a balance between exploring new configurations and accepting a sufficient number of moves, preventing the simulation from becoming stuck or overly conservative.</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Acceptance Counters</td>
+                <td class="px-3 py-1 border-b border-gray-300 dark:border-gray-600">Allow monitoring the efficiency of the simulation over both recent intervals and cumulatively. They are essential for diagnosing sampling issues and optimizing parameters such as maximum displacements or insertion/deletion frequencies.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p><strong>Conceptual Conclusion:</strong></p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Particle movement and insertion/deletion ensure comprehensive sampling of the configuration space.</li>
+            <li>The Metropolis-Hastings criterion ensures that acceptance probabilities adhere to thermodynamic principles.</li>
+            <li>Metadynamics and REMC overcome local energy barriers and slow sampling limitations.</li>
+            <li>Displacement adjustment and the use of acceptance counters optimize efficiency and enable continuous diagnostics of the simulation.</li>
+          </ul>
+          <p>Together, these techniques allow us to study complex particle systems, explore intricate energy landscapes, and obtain reliable results for thermodynamic and structural properties.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

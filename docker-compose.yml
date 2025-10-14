@@ -1,0 +1,13 @@
+services:
+  mc_md_simulator:
+    build: .
+    container_name: mc_md_simulator_container  # Container name / Nombre del contenedor
+    image: mc_md_simulator_image               # Image name / Nombre de la imagen
+    ports:
+      - "5000:5000"                        # Expose Flask port / Exponer puerto Flask
+    volumes:
+      - ./python:/app/python               # Map Python source / Mapear código Python
+      - ./fortran:/app/fortran             # Map Fortran source / Mapear código Fortran
+      - ./web:/app/web                     # Map Web source / Mapear código Web
+      - ./data:/app/data                   # Map Data folder / Mapear carpeta de datos
+    command: ["python", "python/main.py"]  # Start main script / Ejecutar script principal
