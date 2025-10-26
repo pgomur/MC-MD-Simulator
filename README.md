@@ -41,7 +41,7 @@ Functional prototype of an advanced web platform for Molecular Dynamics (MD) and
 Note: Code contains comments in English and Spanish
 ```
 
-## 🚀 Instalación
+## 🚀 installation
 
 Follow these steps to launch the functional prototype of **MC-MD-Simulator**
 
