@@ -1,11 +1,9 @@
-<p align="center">
+<p>
 Functional prototype of an advanced web platform for Molecular Dynamics (MD) and Monte Carlo (MC) simulations, designed for research in computational physics, theoretical chemistry, and materials science. It combines the performance of Python and Fortran with interactive visualizations in Plotly, allowing detailed analysis of energy, temperature, pressure, particle distributions, and metadynamics biases. The interface provides precise tools for studying complex molecular systems, facilitating both exploration and interpretation of results.
 </p>
 
-<p align="center">
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-7D9EC0?logo=github" />
-  </a>
+<p align="center"style="display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-7D9EC0?logo=github" /></a>
   <img src="https://img.shields.io/badge/Docker-Active-29ABE2?logo=docker" />
   <img src="https://img.shields.io/badge/Python-3.13-3776AB?logo=python" />
   <img src="https://img.shields.io/badge/Fortran-2018-F05032?logo=gnu" />
@@ -15,6 +13,7 @@ Functional prototype of an advanced web platform for Molecular Dynamics (MD) and
   <img src="https://img.shields.io/badge/TailwindCSS-v4.1.14-38B2AC?logo=tailwindcss" />
   <img src="https://img.shields.io/badge/Plotly-2.26.1-1f77b4?logo=plotly" />
 </p>
+
 
 <p align="center">
   <img src="web/assets/interface.png" alt="Vista de la interfaz" width="700"/>
