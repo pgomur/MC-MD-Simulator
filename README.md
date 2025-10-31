@@ -74,7 +74,7 @@ docker run -p 5000:5000 --name mc_md_simulator_container mc_md_simulator_image
 | ⚙️ **Fortran / Scientific** | gfortran               | 14.2            |
 |                            | Estándar Fortran       | 2018            |
 | 🐳 **Containers** | Docker / Docker Compose | –           |
-| 💾 **Data**         | Binario y JSON         | –               |
+| 💾 **Data**         | Binary and JSON        | –               |
 
 
 ## 🧪 Molecular Dynamics
