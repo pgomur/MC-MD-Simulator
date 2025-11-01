@@ -16,7 +16,7 @@ Functional prototype of an advanced web platform for Molecular Dynamics (MD) and
 
 
 <p align="center">
-  <img src="web/assets/interface.png" alt="Vista de la interfaz" width="700"/>
+  <img src="web/assets/interface.png" width="700"/>
   <br>
   <em>View of the interface and basic operation of the prototype.</em>
 </p>
@@ -72,7 +72,7 @@ docker run -p 5000:5000 --name mc_md_simulator_container mc_md_simulator_image
 |                            | Flask                  | 3.1.2           |
 |                            | NumPy                  | 2.3.3           |
 | ⚙️ **Fortran / Scientific** | gfortran               | 14.2            |
-|                            | Estándar Fortran       | 2018            |
+|                            | Fortran Standard       | 2018            |
 | 🐳 **Containers** | Docker / Docker Compose | –           |
 | 💾 **Data**         | Binary and JSON        | –               |
 
