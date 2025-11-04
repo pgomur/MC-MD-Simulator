@@ -10,7 +10,7 @@
 !
 ! Simulación Monte Carlo en el ensamble μVT con posible sesgo de Metadynamics/Umbrella.
 ! Lee los parámetros de entrada desde la línea de comandos, inicializa el sistema y el RNG,
-! aplica movimientos Monte Carlo, ajusta los pasos periódicamente y guarda la salida binaria.
+! aplica movimientos Monte Carlo, ajusta los pasos periódicamente y guarda la salida binaria
 ! -----------------------------------------------------------------
 program mc_muvt
     use iso_fortran_env, only: real64
