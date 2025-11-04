@@ -21,7 +21,7 @@ import { runSimulation, downloadSimulation } from "./simulation.js";
  * - Attaches the "runSimulation" and "downloadSimulation" buttons to their respective functions.
  *
  * @example
- * // Automatically runs when the page is loaded
+ * // Automatically runs when the page is loaded.
  * document.addEventListener("DOMContentLoaded", ...);
  */
 document.addEventListener("DOMContentLoaded", () => {
