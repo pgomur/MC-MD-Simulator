@@ -1,4 +1,4 @@
-# ===== Imagen base / Base image =====
+# ===== Imagen base. / Base image. =====
 FROM python:3.13-slim
 
 # ===== Instalar gfortran 14.2 y utilidades necesarias / Install gfortran 14.2 and required tools =====
