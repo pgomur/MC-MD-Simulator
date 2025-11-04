@@ -57,7 +57,7 @@ def simulate(simulation_type: str):
             return jsonify({"error": "Simulation type not supported"}), 400
 
 # Ejecutar la aplicación si este archivo se ejecuta directamente
-# Run the app if this file is executed directly
+# Run the app if this file is executed directly.
 if __name__ == "__main__":
     # debug=True solo para desarrollo / debug=True only for development
     app.run(host="0.0.0.0", port=5000, debug=True)
