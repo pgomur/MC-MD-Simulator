@@ -14,7 +14,6 @@ Functional prototype of an advanced web platform for Molecular Dynamics (MD) and
   <img src="https://img.shields.io/badge/Plotly-2.26.1-1f77b4?logo=plotly" />
 </p>
 
-
 <p align="center">
   <img src="web/assets/interface.png" width="700"/>
   <br>
