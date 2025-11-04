@@ -10,4 +10,4 @@ services:
       - ./fortran:/app/fortran             # Map Fortran source / Mapear código Fortran
       - ./web:/app/web                     # Map Web source / Mapear código Web
       - ./data:/app/data                   # Map Data folder / Mapear carpeta de datos
-    command: ["python", "python/main.py"]  # Start main script / Ejecutar script principal
+    command: ["python", "python/main.py"]  # Start main script / Ejecutar script principal.
